@@ -17,6 +17,13 @@ class KoboHighlightExtractor:
         if config_file and os.path.exists(config_file):
             config.read(config_file)
         return config
+    
+    def _clean_file_path(self, path: str) -> str:
+        """Remove unnecessary file path information."""
+        prefix = "file:///mnt/onboard/"
+        if path.startswith(prefix):
+            return path[len(prefix):]
+        return path
 
     def get_highlights(self, book_id: str = None, book_title: str = None, date_from: datetime = None, date_to: datetime = None) -> List[Tuple[int, str, str, str, str, str, str]]:
         query = '''
@@ -42,7 +49,22 @@ class KoboHighlightExtractor:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(query, params)
-            return cursor.fetchall()
+            results = cursor.fetchall()
+
+        # Clean the file paths in the results
+        cleaned_results = [
+            (
+                h[0],  # BookmarkID
+                self._clean_file_path(h[1]),  # VolumeID (cleaned)
+                h[2],  # Text
+                self._clean_file_path(h[3]),  # ContentID (cleaned)
+                h[4],  # Title
+                h[5],  # Attribution
+                h[6]   # DateCreated
+            ) for h in results
+        ]
+
+        return cleaned_results
 
     def list_books_with_highlights(self) -> List[Tuple[str, str, str]]:
         query = '''
@@ -55,7 +77,18 @@ class KoboHighlightExtractor:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(query)
-            return cursor.fetchall()
+            results = cursor.fetchall()
+
+        # Clean the file paths in the results
+        cleaned_results = [
+            (
+                self._clean_file_path(b[0]),  # ContentID (cleaned)
+                b[1],  # Title
+                b[2]   # Attribution
+            ) for b in results
+        ]
+
+        return cleaned_results
 
     def get_highlight_count(self) -> Dict[str, int]:
         query = '''
@@ -102,9 +135,20 @@ class KoboHighlightExtractor:
 
     def export_csv(self, highlights: List[Tuple[int, str, str, str, str, str, str]], output_file: str) -> None:
         with open(output_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
+            writer = csv.writer(f, quoting=csv.QUOTE_ALL, escapechar='\\')
             writer.writerow(["BookmarkID", "VolumeID", "Text", "ContentID", "BookTitle", "Author", "DateCreated"])
-            writer.writerows(highlights)
+            for highlight in highlights:
+                # Replace newlines with space to keep CSV structure intact
+                cleaned_text = highlight[2].replace('\n', ' ').replace('\r', '')
+                writer.writerow([
+                    highlight[0],
+                    highlight[1],
+                    cleaned_text,
+                    highlight[3],
+                    highlight[4],
+                    highlight[5],
+                    highlight[6]
+                ])
 
     def export_sqlite(self, highlights: List[Tuple[int, str, str, str, str, str, str]], output_file: str) -> None:
         with sqlite3.connect(output_file) as conn:
