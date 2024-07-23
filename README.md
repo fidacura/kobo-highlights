@@ -32,43 +32,43 @@ You can use the script directly from the command line:
 1. Backup the Kobo database:
 
 ```bash
-python kobo-highlights.py --backup backup.sqlite
+python kobo_highlights.py --backup backup.sqlite
 ```
 
 2. List books with highlights:
 
 ```bash
-python kobo-highlights.py --list-books
+python kobo_highlights.py --list-books
 ```
 
 3. Get highlight count:
 
 ```bash
-python kobo-highlights.py --count
+python kobo_highlights.py --count
 ```
 
 4. Export highlights (use one or more of --txt, --json, --csv, --sqlite):
 
 ```bash
-python kobo-highlights.py --txt highlights.txt --json highlights.json
+python kobo_highlights.py --txt highlights.txt --json highlights.json
 ```
 
 5. Export highlights for a specific book:
 
 ```bash
-python kobo-highlights.py --book-id [book_id] --csv book_highlights.csv
+python kobo_highlights.py --book-id [book_id] --csv book_highlights.csv
 ```
 
 6. Export highlights within a date range:
 
 ```bash
-python kobo-highlights.py --date-from YYYY-MM-DD --date-to YYYY-MM-DD --json date_range_highlights.json
+python kobo_highlights.py --date-from YYYY-MM-DD --date-to YYYY-MM-DD --json date_range_highlights.json
 ```
 
 For more options, run:
 
 ```bash
-python kobo-highlights.py --help
+python kobo_highlights.py --help
 ```
 
 ## Testing
