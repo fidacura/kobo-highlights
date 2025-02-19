@@ -1,8 +1,6 @@
 # kobo_highlights
 """
-kobo_highlights - A tool to extract highlights from Kobo devices.
-It provides a simple way to extract highlights from Kobo e-readers
-and export them to various formats including TXT, JSON, CSV, and SQLite.
+kobo-highlights - A tool to extract highlights from Kobo devices.
 """
 
 # Version of the kobo_highlights package
