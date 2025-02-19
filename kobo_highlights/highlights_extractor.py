@@ -9,10 +9,12 @@ import configparser
 
 class KoboHighlightExtractor:
     def __init__(self, kobo_path: str, config_file: str = None):
+        # try to load config if provided, otherwise use default
         self.config = self.load_config(config_file)
         self.db_path = os.path.join(kobo_path, '.kobo', 'KoboReader.sqlite')
 
     def load_config(self, config_file: str) -> configparser.ConfigParser:
+        # grab our config settings if the file exists
         config = configparser.ConfigParser()
         if config_file and os.path.exists(config_file):
             config.read(config_file)
@@ -26,12 +28,14 @@ class KoboHighlightExtractor:
         return path
 
     def get_highlights(self, book_id: str = None, book_title: str = None, date_from: datetime = None, date_to: datetime = None) -> List[Tuple[int, str, str, str, str, str, str]]:
+        # base query to grab all the highlight info we need
         query = '''
             SELECT b.BookmarkID, b.VolumeID, b.Text, b.ContentID, c.Title, c.Attribution, b.DateCreated
             FROM Bookmark b
             JOIN content c ON b.VolumeID = c.ContentID
             WHERE b.Type = 'highlight'
         '''
+        # build up our query filters based on user request
         params = []
         if book_id:
             query += ' AND b.VolumeID = ?'
@@ -51,22 +55,23 @@ class KoboHighlightExtractor:
             cursor.execute(query, params)
             results = cursor.fetchall()
 
-        # Clean the file paths in the results
+        # clean up those funky kobo paths in the results
         cleaned_results = [
             (
-                h[0],  # BookmarkID
-                self._clean_file_path(h[1]),  # VolumeID (cleaned)
-                h[2],  # Text
-                self._clean_file_path(h[3]),  # ContentID (cleaned)
-                h[4],  # Title
-                h[5],  # Attribution
-                h[6]   # DateCreated
+                h[0],                           # BookmarkID
+                self._clean_file_path(h[1]),    # VolumeID (cleaned)
+                h[2],                           # Text
+                self._clean_file_path(h[3]),    # ContentID (cleaned)
+                h[4],                           # Title
+                h[5],                           # Attribution
+                h[6]                            # DateCreated
             ) for h in results
         ]
 
         return cleaned_results
 
     def list_books_with_highlights(self) -> List[Tuple[str, str, str]]:
+        # grab a list of all books that have any highlights in them
         query = '''
             SELECT DISTINCT c.ContentID, c.Title, c.Attribution
             FROM Bookmark b
@@ -79,18 +84,19 @@ class KoboHighlightExtractor:
             cursor.execute(query)
             results = cursor.fetchall()
 
-        # Clean the file paths in the results
+        # clean the file paths in the results
         cleaned_results = [
             (
-                self._clean_file_path(b[0]),  # ContentID (cleaned)
-                b[1],  # Title
-                b[2]   # Attribution
+                self._clean_file_path(b[0]),    # ContentID (cleaned)
+                b[1],                           # Title
+                b[2]                            # Attribution
             ) for b in results
         ]
 
         return cleaned_results
 
     def get_highlight_count(self) -> Dict[str, int]:
+        # just count how many highlights we've got total and in how many books
         query = '''
             SELECT 
                 COUNT(*) as total_highlights,
@@ -108,6 +114,7 @@ class KoboHighlightExtractor:
             }
 
     def export_txt(self, highlights: List[Tuple[int, str, str, str, str, str, str]], output_file: str) -> None:
+        # export highlights to a simple text file, one per block
         with open(output_file, 'w', encoding='utf-8') as f:
             for highlight in highlights:
                 f.write(f"BookmarkID: {highlight[0]}\n")
@@ -119,6 +126,7 @@ class KoboHighlightExtractor:
                 f.write(f"Date Created: {highlight[6]}\n\n")
 
     def export_json(self, highlights: List[Tuple[int, str, str, str, str, str, str]], output_file: str) -> None:
+        # format highlights as json with nice field names
         highlights_data = [
             {
                 "BookmarkID": h[0],
@@ -138,7 +146,7 @@ class KoboHighlightExtractor:
             writer = csv.writer(f, quoting=csv.QUOTE_ALL, escapechar='\\')
             writer.writerow(["BookmarkID", "VolumeID", "Text", "ContentID", "BookTitle", "Author", "DateCreated"])
             for highlight in highlights:
-                # Replace newlines with space to keep CSV structure intact
+                # replace newlines with space to keep CSV structure intact
                 cleaned_text = highlight[2].replace('\n', ' ').replace('\r', '')
                 writer.writerow([
                     highlight[0],
@@ -151,6 +159,7 @@ class KoboHighlightExtractor:
                 ])
 
     def export_sqlite(self, highlights: List[Tuple[int, str, str, str, str, str, str]], output_file: str) -> None:
+        # create a new sqlite database with all our highlights
         with sqlite3.connect(output_file) as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -170,6 +179,7 @@ class KoboHighlightExtractor:
             ''', highlights)
 
     def backup_database(self, backup_path: str) -> None:
+        # just make a straight copy of the kobo database file
         try:
             shutil.copy2(self.db_path, backup_path)
         except IOError as e:

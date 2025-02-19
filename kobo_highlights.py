@@ -5,6 +5,7 @@ from kobo_highlights import KoboHighlightExtractor, DEFAULT_KOBO_PATH
 from datetime import datetime
 
 def main():
+    # setup all the cli args we need
     parser = argparse.ArgumentParser(description="Extract highlights from Kobo devices")
     parser.add_argument("kobo_path", nargs='?', default=DEFAULT_KOBO_PATH, help=f"Path to the Kobo device (default: {DEFAULT_KOBO_PATH})")
     parser.add_argument("--backup", help="Backup the Kobo database to the specified file")
@@ -19,39 +20,46 @@ def main():
     parser.add_argument("--csv", help="Export to CSV file")
     parser.add_argument("--sqlite", help="Export to SQLite database")
 
+    # parse args and ready to go!
     args = parser.parse_args()
 
     try:
+        # fire up our highlights extractor with the given kobo path
         extractor = KoboHighlightExtractor(args.kobo_path)
 
+        # backup mode: copy the database and we're done
         if args.backup:
             extractor.backup_database(args.backup)
             print(f"Database backed up to {args.backup}")
             return
 
+        # list mode: show all books that have highlights
         if args.list_books:
             books = extractor.list_books_with_highlights()
             for book in books:
                 print(f"ID: {book[0]}, Title: {book[1]}, Author: {book[2]}")
             return
 
+        # count mode: just show the numbers and exit
         if args.count:
             count_info = extractor.get_highlight_count()
             print(f"Total highlights: {count_info['total_highlights']}")
             print(f"Books with highlights: {count_info['books_with_highlights']}")
             return
 
-        # Convert date strings to datetime objects
+        # handle any date filters the user give us
         date_from = datetime.strptime(args.date_from, "%Y-%m-%d") if args.date_from else None
         date_to = datetime.strptime(args.date_to, "%Y-%m-%d") if args.date_to else None
 
-        # Get highlights
+        # grab all the highlights matching our filters
         highlights = extractor.get_highlights(args.book_id, args.book_title, date_from, date_to)
 
+        # exit if we didn't find anything
         if not highlights:
             print("No highlights found with the given criteria.")
             return
 
+        # export to whatever format(s) the user specified
         if args.txt:
             extractor.export_txt(highlights, args.txt)
             print(f"Exported to {args.txt}")
@@ -65,8 +73,8 @@ def main():
             extractor.export_sqlite(highlights, args.sqlite)
             print(f"Exported to {args.sqlite}")
 
+        # if no export format was specified, just dump to console
         if not any([args.txt, args.json, args.csv, args.sqlite]):
-            # If no export format is specified, print the highlights to console
             for highlight in highlights:
                 print(f"Book: {highlight[4]}")
                 print(f"Author: {highlight[5]}")
