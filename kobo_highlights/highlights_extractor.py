@@ -9,9 +9,16 @@ import configparser
 
 class KoboHighlightExtractor:
     def __init__(self, kobo_path: str, config_file: str = None):
-        # try to load config if provided, otherwise use default
+        # add simple path validation (2 lines)
+        if not os.path.exists(kobo_path):
+            raise FileNotFoundError(f"kobo path not found: {kobo_path}")
+        
         self.config = self.load_config(config_file)
         self.db_path = os.path.join(kobo_path, '.kobo', 'KoboReader.sqlite')
+        
+        # add database validation (2 lines)
+        if not os.path.exists(self.db_path):
+            raise FileNotFoundError(f"kobo database not found: {self.db_path}")
 
     def load_config(self, config_file: str) -> configparser.ConfigParser:
         # grab our config settings if the file exists
@@ -50,6 +57,9 @@ class KoboHighlightExtractor:
             query += ' AND b.DateCreated <= ?'
             params.append(date_to.strftime('%Y-%m-%d'))
         
+        # add ORDER BY at the end
+        query += ' ORDER BY b.DateCreated ASC'
+        
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(query, params)
@@ -63,7 +73,7 @@ class KoboHighlightExtractor:
                 h[2],                           # Text
                 self._clean_file_path(h[3]),    # ContentID (cleaned)
                 h[4],                           # Title
-                h[5],                           # Attribution
+                h[5] or "unknown author",       # Attribution (handle null)
                 h[6]                            # DateCreated
             ) for h in results
         ]
@@ -89,7 +99,7 @@ class KoboHighlightExtractor:
             (
                 self._clean_file_path(b[0]),    # ContentID (cleaned)
                 b[1],                           # Title
-                b[2]                            # Attribution
+                b[2] or "unknown author"        # Attribution (handle null)
             ) for b in results
         ]
 
