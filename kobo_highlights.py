@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import sys
+import os
 from kobo_highlights import KoboHighlightExtractor, DEFAULT_KOBO_PATH
 from datetime import datetime
 
@@ -22,6 +23,11 @@ def main():
 
     # parse args and ready to go!
     args = parser.parse_args()
+
+    # validate kobo path after parsing args
+    if args.kobo_path and not os.path.exists(args.kobo_path):
+        print(f"error: kobo path not found: {args.kobo_path}", file=sys.stderr)
+        sys.exit(1)
 
     try:
         # fire up our highlights extractor with the given kobo path
@@ -62,16 +68,16 @@ def main():
         # export to whatever format(s) the user specified
         if args.txt:
             extractor.export_txt(highlights, args.txt)
-            print(f"Exported to {args.txt}")
+            print(f"✓ exported {len(highlights)} highlights to {args.txt}")
         if args.json:
             extractor.export_json(highlights, args.json)
-            print(f"Exported to {args.json}")
+            print(f"✓ exported {len(highlights)} highlights to {args.json}")
         if args.csv:
             extractor.export_csv(highlights, args.csv)
-            print(f"Exported to {args.csv}")
+            print(f"✓ exported {len(highlights)} highlights to {args.csv}")
         if args.sqlite:
             extractor.export_sqlite(highlights, args.sqlite)
-            print(f"Exported to {args.sqlite}")
+            print(f"✓ exported {len(highlights)} highlights to {args.sqlite}")
 
         # if no export format was specified, just dump to console
         if not any([args.txt, args.json, args.csv, args.sqlite]):
