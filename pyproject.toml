@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "kobo-highlights"
+version = "0.2.0" 
 authors = [
-    {name = "fidacura", email = "hello@fidacura.xyz"},
+    {name = "fidacura", email = "hey@fidacura.net"},
 ]
-description = "A tool to extract highlights from Kobo devices"
+description = "A CLI tool to check and extract highlights from Kobo eReaders"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
@@ -15,18 +16,19 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Topic :: Utilities",
 ]
-dynamic = ["version"]
 
 [project.scripts]
-kobo-highlights = "kobo_highlights:main"
+kobo = "kobo_highlights.kobo_highlights:main"
 
 [tool.setuptools]
 packages = ["kobo_highlights"]
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ["py38"]
 
 [tool.isort]
 profile = "black"
